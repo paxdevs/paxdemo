@@ -8,6 +8,9 @@ Run `docker-build.sh` to build. The output file will be at `build/libpaxdemo.so`
 
 ## Uploading the program
 
+Connect the device to USB.
+
+
 Before uploading the program, you may wish to backup the original libosal.so file like so:
 ```
 python3 prolin-xcb-client/client.py ACM0 pull /data/app/MAINAPP/lib/libosal.so libosal-original.so
@@ -15,7 +18,7 @@ python3 prolin-xcb-client/client.py ACM0 pull /data/app/MAINAPP/lib/libosal.so l
 
 Then, run these commands to upload the required files:
 ```
-python3 prolin-xcb-client/client.py ACM0 push build/libpaxtest.so /data/app/MAINAPP/lib/libosal.so
+python3 prolin-xcb-client/client.py ACM0 push build/libpaxdemo.so /data/app/MAINAPP/lib/libosal.so
 python3 prolin-xcb-client/client.py ACM0 push video.frames /data/app/MAINAPP/lib/video.frames
 ```
 
