@@ -1,6 +1,6 @@
 
-#include "fb.h"
-#include "keypad.h"
+#include "pax/fb.h"
+#include "pax/keypad.h"
 
 #include <fcntl.h>
 #include <sys/mman.h>
