@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.24)
 
 set(CMAKE_C_COMPILER arm-linux-gnueabi-gcc)
 set(CMAKE_CXX_COMPILER arm-linux-gnueabi-g++)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_FLAGS "-O3 -flto")
+set(CMAKE_CXX_FLAGS "-O3 -flto")
 
 project(paxdemo)
 
@@ -51,7 +53,7 @@ add_library(paxdemo SHARED main.cpp audio.cpp)
 target_compile_options(paxdemo PRIVATE -O3 -Wall -Wextra -flto)
 
 # Set the link options
-target_link_options(paxdemo PRIVATE -static-libstdc++ -static-libgcc)
+target_link_options(paxdemo PRIVATE -static-libstdc++ -static-libgcc -flto)
 
 # Link against the libpax library
 target_link_libraries(paxdemo PRIVATE libpax opus ogg opusfile)
