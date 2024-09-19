@@ -15,6 +15,8 @@
 #include <thread>
 #include <utility>
 
+void audio_set_gain(int gain);
+std::future<int> audio_get_file_open_promise();
 void audio_thread();
 
 __attribute__((constructor)) int app_start()
@@ -51,7 +53,9 @@ __attribute__((constructor)) int app_start()
     struct timeval start_ts;
     gettimeofday(&start_ts, 0);
     uint64_t target_us = 1000000 / 60;
-
+    int cur_gain = -256*3*2;
+    audio_get_file_open_promise().get();
+    audio_set_gain(cur_gain);
     while (ptr < st.st_size)
     {
         // Frame is run-length encoded, msb is pixel value, rest of the byte is pixel count
@@ -67,7 +71,7 @@ __attribute__((constructor)) int app_start()
             cur_pixels++;
         }
         ptr++;
-        // Once we've drawn a full frame, sleep to maintain 60fps
+        // Once we've drawn a full frame, handle events
         if (cur_pixels == 240 * 180)
         {
 
@@ -93,6 +97,17 @@ __attribute__((constructor)) int app_start()
                     .detach();
             }
 
+            if (pressed == KEY_2)
+            {
+                cur_gain += 256;
+                audio_set_gain(cur_gain);
+            }
+            if (pressed == KEY_8)
+            {
+                cur_gain -= 256;
+                audio_set_gain(cur_gain);
+            }
+
             auto ev = ts.getTouchEvent();
             auto [x, y, p] = ev;
             if (x != -1)
@@ -110,6 +125,7 @@ __attribute__((constructor)) int app_start()
                 }
             }
 
+            // Sleep to maintain 60fps
             struct timeval end_ts;
             gettimeofday(&end_ts, 0);
             uint64_t elapsed_us = (uint64_t)(end_ts.tv_sec - start_ts.tv_sec) * 1000000 + (end_ts.tv_usec - start_ts.tv_usec);
