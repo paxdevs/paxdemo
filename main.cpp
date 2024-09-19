@@ -1,20 +1,28 @@
 
 #include "pax/fb.h"
 #include "pax/keypad.h"
+#include "pax/touchscreen.h"
+#include "pax/sound.h"
 
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <time.h>
+#include <thread>
 #include <utility>
+
+void audio_thread();
 
 __attribute__((constructor))
 int app_start()
 {
     PAXFramebuffer fb;
     PAXKeypad kp;
+    PAXTouchscreen ts;
+    //PAXSound snd;
 
+    // Map the pixel data into memory
     int videofd = open("/data/app/MAINAPP/lib/video.frames", O_RDONLY);
     if (videofd == -1)
     {
@@ -29,24 +37,50 @@ int app_start()
         return 0;
     }
 
-    // px per frame is 240*180
+    // Start the audio thread
+    std::thread audio(audio_thread);
+    audio.detach();
+
+    // Time the frames to maintain 60fps
     int ptr = 0;
     int cur_pixels = 0;
     struct timeval start_ts;
     gettimeofday(&start_ts, 0);
     uint64_t target_us = 1000000 / 60;
-    while(ptr < st.st_size && kp.getKey() != 223) {
+    while(ptr < st.st_size) {
+        // Frame is run-length encoded, msb is pixel value, rest of the byte is pixel count
         uint8_t cur_pixel_group = video[ptr];
         uint8_t cur_pixel = cur_pixel_group >> 7;
         uint8_t cur_pixel_cnt = cur_pixel_group & 0x7F;
         for(int i = 0;i < cur_pixel_cnt;i++) {
+            // Screen is inverted, so we need to draw from the bottom up
             int x = cur_pixels % 240;
             int y = cur_pixels / 240;
             fb.drawPixel(x, 320-70-y, cur_pixel * 0xFF, cur_pixel * 0xFF, cur_pixel * 0xFF);
             cur_pixels++;
         }
         ptr++;
+        // Once we've drawn a full frame, sleep to maintain 60fps
         if (cur_pixels == 240*180) {
+            
+            // Allow termination with the ESC key
+            if(kp.getKey() == KEY_ESC) {
+                break;
+            }
+
+            auto ev = ts.getTouchEvent();
+            auto [x, y, p] = ev;
+            if (x != -1) {
+                for(int i = 0;i < 320;i++) {
+                    fb.drawPixel(x, i, 0xFF, 0, 0xFF);
+                }
+            }
+            if (y != -1) {
+                for(int i = 0;i < 240;i++) {
+                    fb.drawPixel(i, y, 0, 0xFF, 0xFF);
+                }
+            }
+
             struct timeval end_ts;
             gettimeofday(&end_ts, 0);
             uint64_t elapsed_us = (uint64_t)(end_ts.tv_sec - start_ts.tv_sec) * 1000000 + (end_ts.tv_usec - start_ts.tv_usec);
